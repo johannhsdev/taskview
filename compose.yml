@@ -3,6 +3,7 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: taskview_postgres
+    mem_limit: 256m
     restart: unless-stopped
 
     environment:
@@ -30,6 +31,7 @@ services:
   migration:
     image: gimanhead/taskview-ce-db-migration:${TASKVIEW_VERSION}
     container_name: taskview_migration
+    mem_limit: 256m
     restart: "no"
 
     env_file:
@@ -46,6 +48,7 @@ services:
   taskview-api-server:
     image: gimanhead/taskview-ce-api-server:${TASKVIEW_VERSION}
     container_name: taskview_api
+    mem_limit: 512m
     restart: unless-stopped
 
     sysctls:
@@ -74,6 +77,7 @@ services:
   taskview-webapp:
     image: gimanhead/taskview-ce-webapp:${TASKVIEW_VERSION}
     container_name: taskview_webapp
+    mem_limit: 64m
     restart: unless-stopped
 
     environment:
@@ -86,6 +90,7 @@ services:
   taskview-mcp:
     image: gimanhead/taskview-ce-mcp:${TASKVIEW_VERSION}
     container_name: taskview_mcp
+    mem_limit: 128m
     restart: unless-stopped
 
     environment:
@@ -103,6 +108,7 @@ services:
   centrifugo:
     image: centrifugo/centrifugo:${CENTRIFUGO_VERSION}
     container_name: taskview_centrifugo
+    mem_limit: 128m
     restart: unless-stopped
 
     command: centrifugo -c /centrifugo/config.json
@@ -123,6 +129,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: taskview_cloudflared
+    mem_limit: 128m
     restart: unless-stopped
 
     command:
