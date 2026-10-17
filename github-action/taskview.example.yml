@@ -7,6 +7,8 @@
 #
 # Columnas del proyecto en TaskView, EN ESTE ORDEN (ver docs/github-kanban.md):
 #   Backlog -> Dev -> Review -> QA -> Done
+#   (Backlog es integrada; en un proyecto nuevo: TODO -> Dev, In Progress -> Review,
+#    Done -> QA y agregar la columna Done)
 #
 # Solo se mueve la HU (la tarjeta). Sus subtareas son la checklist y se marcan a mano.
 #

@@ -70,11 +70,16 @@ la acción mueve su HU. Varias subtareas de la misma HU en un PR la mueven una s
 ### Columnas del proyecto
 
 `only-forward` usa el orden de las columnas, que en TaskView es el **orden de creación** (aún
-no se pueden reordenar). Un proyecto nuevo trae `TODO`, `In Progress` y `Done`. Para dejarlo
-como `Backlog → Dev → Review → QA → Done`, antes de tener tareas:
+no se pueden reordenar).
 
-1. Renombra `TODO` → `Backlog`, `In Progress` → `Dev` y `Done` → `Review`.
-2. Agrega las columnas `QA` y luego `Done`, en ese orden.
+Un proyecto nuevo muestra `Backlog`, `TODO`, `In Progress` y `Done`. **`Backlog` es integrada**:
+no se puede editar ni borrar y agrupa las tareas sin estado (toda tarea nueva cae ahí). Las
+columnas reales son las otras tres. Para dejarlo como `Backlog → Dev → Review → QA → Done`,
+antes de tener tareas:
+
+1. Menú `···` de cada columna: renombra `TODO` → `Dev`, `In Progress` → `Review` y
+   `Done` → `QA`.
+2. **+ Añadir columna** → `Done`.
 
 Por eso la plantilla estándar usa `create-missing-columns: 'false'`: si falta una columna,
 la acción avisa en lugar de crearla al final.
