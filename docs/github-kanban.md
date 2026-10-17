@@ -122,9 +122,38 @@ rules: |
 
 ---
 
+## Historias, tareas y bugs en TaskView
+
+TaskView 1.56.0 no tiene tipos de tarea ni claves por proyecto, y sus **subtareas nativas no
+aparecen en el Kanban** (son una checklist dentro de la tarjeta). Para que cada pieza con rama
+propia sea una tarjeta que se mueva:
+
+| Concepto | Cómo se crea en TaskView |
+|---|---|
+| Historia de usuario | Tarea normal con etiqueta **Historia** |
+| Subtarea (con rama propia) | Tarea normal con etiqueta **Subtarea** (o **Bug**) |
+| Agrupar historia + subtareas | Una **lista** por historia (ej. `HU Login`) con la historia y sus tareas dentro |
+| Orden entre ellas | **Dependency Graph**: subtareas → historia |
+| Pasos pequeños sin rama | Subtareas nativas (checklist) dentro de la tarjeta |
+
+Con la lista por historia, el Kanban se puede filtrar por lista y ver solo esa historia.
+
+Al crear una tarea TaskView le asigna su número automáticamente (único en toda la instancia,
+no por proyecto). Se ve como `#57` en el detalle de la tarea; un clic lo copia. La rama queda
+`tv-57-descripcion`.
+
 ## Código de tarea
 
-Es el ID de la tarea en TaskView: menú de la tarea → **Copy task ID**.
+Es el ID de la tarea en TaskView: botón `#57` en el detalle de la tarea (**Copy task ID**).
+
+`tv-` es solo el prefijo que reconoce la acción, no algo de TaskView. Cada repo puede usar el
+suyo con `task-pattern`, por ejemplo `crm-57-login`:
+
+```yaml
+task-pattern: '(?:^|[^a-z0-9])crm[-_ ](\d+)(?![0-9])'
+```
+
+No usar un patrón genérico tipo `[a-z]+-(\d+)`: ramas como `release-2` moverían la tarea 2.
 
 | Válido | No válido |
 |---|---|
