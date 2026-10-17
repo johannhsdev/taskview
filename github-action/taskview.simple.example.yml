@@ -1,0 +1,38 @@
+# ============================================================
+# TaskView Kanban - flujo simple (una sola rama principal)
+# Copiar en el repo como: .github/workflows/taskview.yml
+#
+# Columnas: TODO -> In Progress -> Review -> Done
+#   rama tv-123-...   -> In Progress
+#   PR abierto        -> Review
+#   PR mergeado       -> Done + completada
+# ============================================================
+
+name: TaskView Kanban
+
+on:
+  create:
+  pull_request:
+    types: [opened, reopened, ready_for_review, converted_to_draft, closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  kanban:
+    if: github.event_name != 'create' || github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - uses: johannhsdev/taskview/github-action@v1
+        with:
+          api-url: https://tasks-api.slasdevelopments.com
+          token: ${{ secrets.TASKVIEW_TOKEN }}
+          rules: |
+            branch    = In Progress
+            pr_draft  =
+            pr_opened = Review
+            pr_merged = Done, complete
+            pr_closed =

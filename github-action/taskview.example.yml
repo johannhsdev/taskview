@@ -1,19 +1,26 @@
 # ============================================================
-# TaskView Kanban - copiar en cada repo de codigo como:
-#   .github/workflows/taskview.yml
+# TaskView Kanban - flujo de desarrollo (develop / qa / main)
+# Copiar en cada repo de codigo como: .github/workflows/taskview.yml
 #
-# Requisitos en el repo (Settings -> Secrets and variables -> Actions):
+# Requisito en el repo (Settings -> Secrets and variables -> Actions):
 #   Secret   TASKVIEW_TOKEN    token tvk_... de TaskView
 #
-# Proceso (columnas del Kanban, ver docs/github-kanban.md):
-#   TODO                     manual (planificacion / sprint)
-#   TODO -> In Progress      al crear la rama   tv-123-descripcion
-#   In Progress -> Review    al abrir el PR
-#   Review -> Done           al mergear el PR (y la tarea queda completada)
+# Columnas del proyecto en TaskView, EN ESTE ORDEN (ver docs/github-kanban.md):
+#   Backlog -> Dev -> Review -> QA -> Done
 #
-# El codigo de la tarea es su ID en TaskView (menu de la tarea -> Copy task ID).
-# Tambien sirve en el titulo del PR: "TV-123 Login con Google".
-# Varias tareas en un PR: "tv-12 tv-15 Refactor auth".
+# Proceso:
+#   Backlog   manual: la tarea se crea y se asigna
+#   Dev       se crea la rama con el codigo: tv-12-login (historia) o tv-13-api (subtarea)
+#   Review    se abre un PR (subtarea -> historia, historia -> develop / qa)
+#   QA        se mergea un PR a qa
+#   (develop) mergear a develop no mueve nada: queda integrado
+#   Done      se mergea un PR a main (develop -> main o historia -> main) = en produccion
+#
+# En los merges a qa / main se leen tambien los commits del PR, asi
+# develop -> main mueve todas las historias y subtareas que lleva dentro.
+# Nunca retrocede: si una tarea ya esta en QA, abrir otro PR no la regresa a Review.
+#
+# Codigo de tarea = ID en TaskView (menu de la tarea -> Copy task ID).
 # ============================================================
 
 name: TaskView Kanban
@@ -23,7 +30,9 @@ on:
   pull_request:
     types: [opened, reopened, ready_for_review, converted_to_draft, closed]
 
-permissions: {}
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   kanban:
@@ -39,24 +48,32 @@ jobs:
           token: ${{ secrets.TASKVIEW_TOKEN }}
 
           # ----------------------------------------------
-          # Columnas del Kanban (nombre exacto, sin importar mayusculas).
-          # Vacio = ese evento no mueve la tarjeta.
+          # Reglas:  evento[@rama-destino] = Columna[, complete][, force]
+          #   eventos: branch, pr_draft, pr_opened, pr_merged, pr_closed
+          #   rama destino acepta * (release/*). Gana la primera que coincide.
+          #   columna vacia = no mover. complete = marcar completada.
+          #   force = permite retroceder (ignora only-forward).
           # ----------------------------------------------
-          branch-created-column: In Progress
-          pr-draft-column: ''
-          pr-opened-column: Review
-          pr-merged-column: Done
-          pr-closed-column: ''
+          rules: |
+            branch            = Dev
+            pr_draft          =
+            pr_opened         = Review
+            pr_merged@qa      = QA
+            pr_merged@main    = Done, complete
+            pr_merged@develop =
+            pr_merged         =
+            pr_closed         =
 
-          # Marcar la tarea como completada al mergear
-          complete-on-merge: 'true'
+          # No mover tarjetas hacia atras segun el orden de columnas
+          only-forward: 'true'
 
-          # Crear la columna si el proyecto no la tiene (ej. "Review")
-          create-missing-columns: 'true'
+          # Leer codigos de tarea en los commits del PR (develop -> main)
+          scan-commits: 'true'
 
-          # Codigo de tarea en ramas / titulos (grupo 1 = ID).
-          # Por defecto: tv-123, feature/tv-123, fix_TV-123
-          # task-pattern: '(?:^|[^a-z0-9])tv-(\d+)(?![0-9])'
+          # Con este flujo conviene crear las columnas a mano y en orden
+          create-missing-columns: 'false'
 
-          # Fallar el check si TaskView da error (por defecto solo advierte)
+          # Codigo de tarea (grupo 1 = ID). Por defecto: tv-123
+          # task-pattern: '(?:^|[^a-z0-9])tv[-_ ](\d+)(?![0-9])'
+
           fail-on-error: 'false'

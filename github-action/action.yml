@@ -16,7 +16,29 @@ inputs:
   task-pattern:
     description: Regex (sin flags, se aplica case-insensitive) con un grupo que captura el ID de la tarea.
     required: false
-    default: '(?:^|[^a-z0-9])tv-(\d+)(?![0-9])'
+    default: '(?:^|[^a-z0-9])tv[-_ ](\d+)(?![0-9])'
+  rules:
+    description: >
+      Reglas, una por linea: "<evento>[@<rama-destino>] = <Columna>[, complete][, force]".
+      Eventos: branch, pr_draft, pr_opened, pr_merged, pr_closed. La rama acepta * (ej. release/*).
+      Gana la primera regla que coincide; columna vacia = no mover. Si se define, reemplaza a las
+      opciones *-column y complete-on-merge.
+    required: false
+    default: ''
+  only-forward:
+    description: >
+      No mover tarjetas hacia atras segun el orden de columnas del proyecto (una regla con "force" lo ignora).
+      Vacio = true si se usan rules, false en el modo de opciones *-column (comportamiento v1).
+    required: false
+    default: ''
+  scan-commits:
+    description: En eventos de PR, buscar tambien codigos de tarea en los mensajes de commits del PR (necesario para develop -> main).
+    required: false
+    default: 'true'
+  github-token:
+    description: Token para leer los commits del PR. Requiere permissions contents:read y pull-requests:read.
+    required: false
+    default: ${{ github.token }}
   branch-created-column:
     description: Columna al crear una rama con el codigo de la tarea. Vacio = no mover.
     required: false

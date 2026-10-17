@@ -15,7 +15,7 @@ Misma estructura que el repo de `n8n`:
 | `scripts/generate-secrets.sh` | Genera los secretos que siguen en `change-me` |
 | `scripts/telegram-webhook.sh` | Registra el webhook del bot de Telegram |
 | `secrets/` | Apple `AuthKey.p8` y Firebase JSON (no se sube a git) |
-| [`github-action/`](github-action) | GitHub Action que mueve tarjetas del Kanban por ramas y PRs ([guía](docs/github-kanban.md)) |
+| [`github-action/`](github-action) | GitHub Action que mueve tarjetas del Kanban por ramas, PRs y rama destino, con reglas por repo ([guía](docs/github-kanban.md)) |
 | [`docs/integraciones.md`](docs/integraciones.md) | Paso a paso de GitHub, GitLab, Gitea, Telegram, Slack, Google, Apple y Firebase |
 
 Documentacion oficial: https://taskview.tech/docs
