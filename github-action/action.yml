@@ -1,0 +1,61 @@
+name: TaskView Kanban
+description: Mueve tarjetas del Kanban de TaskView segun ramas y pull requests de GitHub.
+author: johannhsdev
+
+branding:
+  icon: columns
+  color: green
+
+inputs:
+  api-url:
+    description: URL publica del API de TaskView (ej. https://tasks-api.slasdevelopments.com)
+    required: true
+  token:
+    description: Token de API de TaskView (tvk_...). Guardarlo como secret del repo.
+    required: true
+  task-pattern:
+    description: Regex (sin flags, se aplica case-insensitive) con un grupo que captura el ID de la tarea.
+    required: false
+    default: '(?:^|[^a-z0-9])tv-(\d+)(?![0-9])'
+  branch-created-column:
+    description: Columna al crear una rama con el codigo de la tarea. Vacio = no mover.
+    required: false
+    default: In Progress
+  pr-draft-column:
+    description: Columna al abrir un PR en draft o pasarlo a draft. Vacio = no mover.
+    required: false
+    default: ''
+  pr-opened-column:
+    description: Columna al abrir, reabrir o marcar listo un PR. Vacio = no mover.
+    required: false
+    default: Review
+  pr-merged-column:
+    description: Columna al mergear el PR. Vacio = no mover.
+    required: false
+    default: Done
+  pr-closed-column:
+    description: Columna al cerrar un PR sin mergear. Vacio = no mover.
+    required: false
+    default: ''
+  complete-on-merge:
+    description: Marcar la tarea como completada al mergear el PR.
+    required: false
+    default: 'true'
+  create-missing-columns:
+    description: Crear la columna en el proyecto si no existe.
+    required: false
+    default: 'true'
+  fail-on-error:
+    description: Fallar el job si TaskView responde con error (por defecto solo advierte).
+    required: false
+    default: 'false'
+
+outputs:
+  task-ids:
+    description: IDs de tareas detectados, separados por coma.
+  column:
+    description: Columna destino aplicada.
+
+runs:
+  using: node24
+  main: index.mjs

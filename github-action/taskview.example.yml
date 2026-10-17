@@ -1,0 +1,62 @@
+# ============================================================
+# TaskView Kanban - copiar en cada repo de codigo como:
+#   .github/workflows/taskview.yml
+#
+# Requisitos en el repo (Settings -> Secrets and variables -> Actions):
+#   Secret   TASKVIEW_TOKEN    token tvk_... de TaskView
+#
+# Proceso por defecto (TaskView columns):
+#   Backlog -> TODO          manual (planificacion / sprint)
+#   TODO -> In Progress      al crear la rama   tv-123-descripcion
+#   In Progress -> Review    al abrir el PR
+#   Review -> Done           al mergear el PR (y la tarea queda completada)
+#
+# El codigo de la tarea es su ID en TaskView (menu de la tarea -> Copy task ID).
+# Tambien sirve en el titulo del PR: "TV-123 Login con Google".
+# Varias tareas en un PR: "tv-12 tv-15 Refactor auth".
+# ============================================================
+
+name: TaskView Kanban
+
+on:
+  create:
+  pull_request:
+    types: [opened, reopened, ready_for_review, converted_to_draft, closed]
+
+permissions: {}
+
+jobs:
+  kanban:
+    # "create" tambien se dispara con tags; solo nos interesan ramas
+    if: github.event_name != 'create' || github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - uses: johannhsdev/taskview/github-action@v1
+        with:
+          api-url: https://tasks-api.slasdevelopments.com
+          token: ${{ secrets.TASKVIEW_TOKEN }}
+
+          # ----------------------------------------------
+          # Columnas del Kanban (nombre exacto, sin importar mayusculas).
+          # Vacio = ese evento no mueve la tarjeta.
+          # ----------------------------------------------
+          branch-created-column: In Progress
+          pr-draft-column: ''
+          pr-opened-column: Review
+          pr-merged-column: Done
+          pr-closed-column: ''
+
+          # Marcar la tarea como completada al mergear
+          complete-on-merge: 'true'
+
+          # Crear la columna si el proyecto no la tiene (ej. "Review")
+          create-missing-columns: 'true'
+
+          # Codigo de tarea en ramas / titulos (grupo 1 = ID).
+          # Por defecto: tv-123, feature/tv-123, fix_TV-123
+          # task-pattern: '(?:^|[^a-z0-9])tv-(\d+)(?![0-9])'
+
+          # Fallar el check si TaskView da error (por defecto solo advierte)
+          fail-on-error: 'false'
