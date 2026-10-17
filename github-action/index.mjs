@@ -232,14 +232,20 @@ async function projectColumns(goalId) {
     return columnsCache.get(goalId);
 }
 
-async function moveTask(taskId, rule) {
-    const task = await api('GET', `/module/tasks/${taskId}`);
+// Las subtareas no son tarjetas del Kanban: se mueve la tarea principal (HU).
+async function resolveCard(taskId) {
+    let task = await api('GET', `/module/tasks/${taskId}`);
 
-    if (!task) {
-        warn(`La tarea ${taskId} no existe o el token no tiene acceso.`);
-        return `| ${taskId} | - | no encontrada |`;
+    for (let depth = 0; task?.parentId && depth < 5; depth++) {
+        log(`#${task.id} es subtarea de #${task.parentId}: se mueve la tarea principal.`);
+        task = await api('GET', `/module/tasks/${task.parentId}`);
     }
 
+    return task;
+}
+
+async function moveTask(task, rule) {
+    const taskId = task.id;
     const columns = await projectColumns(task.goalId);
     const sameName = (c) => c.name.trim().toLowerCase() === rule.column.trim().toLowerCase();
     let column = columns.find(sameName);
@@ -335,11 +341,26 @@ async function main() {
     setOutput('column', rule.column);
 
     const rows = [];
+    const movedCards = new Set();
     let failed = false;
 
     for (const taskId of taskIds) {
         try {
-            rows.push(await moveTask(taskId, rule));
+            const card = await resolveCard(taskId);
+
+            if (!card) {
+                warn(`La tarea ${taskId} no existe o el token no tiene acceso.`);
+                rows.push(`| ${taskId} | - | no encontrada |`);
+                continue;
+            }
+
+            // Varias subtareas de la misma HU: la tarjeta se mueve una sola vez.
+            if (movedCards.has(card.id)) {
+                continue;
+            }
+
+            movedCards.add(card.id);
+            rows.push(await moveTask(card, rule));
         } catch (e) {
             failed = true;
             (config.failOnError ? error : warn)(`Tarea ${taskId}: ${e.message}`);

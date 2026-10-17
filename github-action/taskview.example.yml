@@ -8,19 +8,21 @@
 # Columnas del proyecto en TaskView, EN ESTE ORDEN (ver docs/github-kanban.md):
 #   Backlog -> Dev -> Review -> QA -> Done
 #
+# Solo se mueve la HU (la tarjeta). Sus subtareas son la checklist y se marcan a mano.
+#
 # Proceso:
-#   Backlog   manual: la tarea se crea y se asigna
-#   Dev       se crea la rama con el codigo: tv-12-login (historia) o tv-13-api (subtarea)
-#   Review    se abre un PR (subtarea -> historia, historia -> develop / qa)
+#   Backlog   manual: la HU se crea y se asigna
+#   Dev       se crea la rama con el numero de la HU: tv-57-login  (alias: git tv 57 login)
+#   Review    se abre un PR hacia develop / qa
 #   QA        se mergea un PR a qa
 #   (develop) mergear a develop no mueve nada: queda integrado
-#   Done      se mergea un PR a main (develop -> main o historia -> main) = en produccion
+#   Done      se mergea un PR a main (develop -> main o HU -> main) = en produccion
 #
 # En los merges a qa / main se leen tambien los commits del PR, asi
-# develop -> main mueve todas las historias y subtareas que lleva dentro.
-# Nunca retrocede: si una tarea ya esta en QA, abrir otro PR no la regresa a Review.
+# develop -> main mueve todas las HU que lleva dentro.
+# Nunca retrocede: si una HU ya esta en QA, abrir otro PR no la regresa a Review.
 #
-# Codigo de tarea = ID en TaskView (menu de la tarea -> Copy task ID).
+# Numero de la HU = boton #57 en el detalle de la tarea (Copy task ID).
 # ============================================================
 
 name: TaskView Kanban

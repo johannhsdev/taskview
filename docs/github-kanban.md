@@ -24,41 +24,48 @@ Cada repo elige su flujo copiando una plantilla y ajustando sus reglas:
 ```text
  Backlog ──► Dev ──────► Review ─────► QA ─────────► Done
  manual     rama        PR abierto    merge a qa     merge a main
-            tv-12-...                                (+ completada = en producción)
+            tv-57-...                                (+ completada = en producción)
 ```
 
-| Evento en GitHub | Columna |
+**Lo único que se mueve es la HU** (la tarjeta). Sus subtareas son la checklist de la tarjeta y
+se marcan a mano según el avance.
+
+| Evento en GitHub | Columna de la HU |
 |---|---|
-| Se crea y asigna la tarea | Backlog (manual) |
-| Rama `tv-12-login` (historia) o `tv-13-api` (subtarea) | **Dev** |
-| PR abierto: subtarea → historia, historia → develop / qa | **Review** |
-| Merge a una rama de historia | no mueve (la subtarea sigue en Review) |
+| Se crea y asigna la HU | Backlog (manual) |
+| Rama `tv-57-login` | **Dev** |
+| PR abierto hacia develop / qa | **Review** |
 | Merge a `develop` | no mueve (integrado, esperando QA) |
 | Merge a `qa` | **QA** |
-| Merge a `main` (develop → main o historia → main) | **Done** + completada |
+| Merge a `main` (develop → main o HU → main) | **Done** + completada |
 | PR en draft / cerrado sin merge | no mueve |
 
-### Historias y subtareas
+### Recorrido de una HU
 
 ```text
-main ◄── qa ◄── develop ◄── tv-12-login (historia)
-                               ▲      ▲
-                       tv-13-api    tv-14-ui (subtareas)
+main ◄── qa ◄── develop ◄── tv-57-login (HU #57)
+                              subtareas: [x] API  [x] Pantalla  [ ] Tests
 ```
 
-1. `tv-12-login`, `tv-13-api` y `tv-14-ui` se crean → las tres pasan a **Dev**.
-2. PR `tv-13-api → tv-12-login` → la 13 pasa a **Review**. Su merge no la mueve.
-3. PR `tv-12-login → develop` → la 12 pasa a **Review**.
-4. Merge `develop → qa` → **12, 13 y 14 pasan a QA**.
-5. Merge `develop → main` → **12, 13 y 14 pasan a Done** y quedan completadas.
+1. Se crea la rama `tv-57-login` → la HU pasa a **Dev**. Vas marcando la checklist.
+2. PR `tv-57-login → develop` → **Review**.
+3. Merge a `develop` → se queda en Review.
+4. Merge `develop → qa` → **QA**.
+5. QA encuentra un bug → agrega la subtarea "Bug: ..." a la HU y la regresa a mano a Dev.
+   La corrección va en la misma rama `tv-57-login` (o `tv-57-fix-...`) → nuevo PR → **Review** →
+   merge a `qa` → **QA**.
+6. Merge `develop → main` → **Done** y completada.
 
-En los pasos 4 y 5 la rama origen (`develop`) no tiene código de tarea: la acción lee los
+En los pasos 4 y 6 la rama origen (`develop`) no tiene código de tarea: la acción lee los
 **commits del PR**. Los merges traen el nombre de la rama ("Merge pull request #8 from
-org/tv-13-api") y los squash traen el título del PR, así encuentra todas las tareas que
-viajan dentro.
+org/tv-57-login") y los squash traen el título del PR, así encuentra todas las HU que
+viajan dentro (un `develop → main` puede llevar varias).
 
-**Nunca retrocede** (`only-forward`): si una tarea ya está en QA, abrir el PR `develop → main`
+**Nunca retrocede** (`only-forward`): si la HU ya está en QA, abrir el PR `develop → main`
 no la regresa a Review.
+
+**Protección:** si alguien usa por error el número de una subtarea en la rama (`tv-58-...`),
+la acción mueve su HU. Varias subtareas de la misma HU en un PR la mueven una sola vez.
 
 ### Columnas del proyecto
 
@@ -125,22 +132,40 @@ rules: |
 ## Historias, tareas y bugs en TaskView
 
 TaskView 1.56.0 no tiene tipos de tarea ni claves por proyecto, y sus **subtareas nativas no
-aparecen en el Kanban** (son una checklist dentro de la tarjeta). Para que cada pieza con rama
-propia sea una tarjeta que se mueva:
+aparecen en el Kanban**: son la checklist de la tarjeta. El modelo queda así:
 
-| Concepto | Cómo se crea en TaskView |
+| Concepto | En TaskView |
 |---|---|
-| Historia de usuario | Tarea normal con etiqueta **Historia** |
-| Subtarea (con rama propia) | Tarea normal con etiqueta **Subtarea** (o **Bug**) |
-| Agrupar historia + subtareas | Una **lista** por historia (ej. `HU Login`) con la historia y sus tareas dentro |
-| Orden entre ellas | **Dependency Graph**: subtareas → historia |
-| Pasos pequeños sin rama | Subtareas nativas (checklist) dentro de la tarjeta |
+| Historia de usuario (HU) | La **tarea** (tarjeta del Kanban). Es lo único que se mueve |
+| Partes de la HU | **Subtareas** nativas (checklist), se marcan a mano |
+| Bug encontrado por QA | Subtarea "Bug: ..." dentro de la HU, que QA regresa a Dev a mano |
+| Tipo de tarjeta (opcional) | Etiquetas: `HU`, `Bug` (bug independiente), `Mejora`... |
+| Relación entre HU | **Dependency Graph** (una HU bloquea a otra) |
 
-Con la lista por historia, el Kanban se puede filtrar por lista y ver solo esa historia.
+Al crear la HU, TaskView le asigna su número automáticamente (único en toda la instancia,
+no por proyecto). Se ve como `#57` en el detalle de la tarea; un clic lo copia.
 
-Al crear una tarea TaskView le asigna su número automáticamente (único en toda la instancia,
-no por proyecto). Se ve como `#57` en el detalle de la tarea; un clic lo copia. La rama queda
-`tv-57-descripcion`.
+## Nombre de la rama
+
+TaskView no crea ramas ni permite predefinir su nombre. La convención es:
+
+```text
+tv-<número de la HU>-<descripción corta>     ej: tv-57-login-google
+```
+
+Para no escribirlo a mano, un alias de git (una sola vez por máquina, en Git Bash o Linux/macOS):
+
+```bash
+git config --global alias.tv '!f() { id="$1"; shift; slug=$(echo "$*" | tr "[:upper:]" "[:lower:]" | tr -cs "a-z0-9" "-" | sed "s/^-//;s/-$//"); git checkout -b "tv-$id${slug:+-$slug}"; }; f'
+```
+
+Uso, parado en la rama base (`develop`):
+
+```bash
+git tv 57 Login con Google
+```
+
+Crea y cambia a `tv-57-login-con-google`. Al hacer `git push -u origin HEAD` la HU pasa a Dev.
 
 ## Código de tarea
 
@@ -218,6 +243,8 @@ No cubre: pushes directos a `main` sin PR, reviews aprobados/rechazados ni deplo
 
 - **v1 contra TaskView real** (17-10-2026, repo público temporal + túnel de Cloudflare):
   rama → In Progress, PR → Review (columna creada), merge → Done y completada.
+- **Modelo HU** (API simulado): rama con el número de la HU, rama con número de subtarea
+  (mueve la HU), PR cuyos commits nombran la HU y sus subtareas (la HU se mueve una vez).
 - **Reglas contra API simulado** (TaskView + GitHub): el flujo estándar completo con una
   historia y dos subtareas (rama, PR draft, PR listo, merge a historia, a develop, a qa y a
   main), no retroceder, `force`, regla inválida, título autogenerado `Tv 30` y el modo v1 sin
