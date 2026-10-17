@@ -10,23 +10,30 @@ en TaskView y GitHub solo avisa del avance.
 ## Proceso
 
 ```text
- Backlog ──► TODO ──► In Progress ──► Review ──► Done
-   manual    manual    rama tv-123     PR abierto  PR mergeado
-   (idea)   (sprint)                              (+ completada)
+ TODO ──► In Progress ──► Review ──► Done
+ manual    rama tv-123     PR abierto  PR mergeado
+ (sprint)                           (+ completada)
 ```
 
 | Paso | Quién lo hace | Columna |
 |---|---|---|
-| Se registra la tarea | Tú, en TaskView | Backlog |
-| Entra al sprint / se prioriza | Tú, en TaskView | TODO |
+| Se crea y prioriza la tarea | Tú, en TaskView | TODO |
 | Se crea la rama `tv-123-...` | GitHub Action | In Progress |
 | Se abre el PR | GitHub Action | Review |
 | Se mergea el PR | GitHub Action | Done + completada |
 | PR en draft / cerrado sin merge | No mueve (configurable) | — |
 
-TaskView crea por defecto `Backlog`, `TODO`, `In Progress` y `Done` en cada proyecto.
-`Review` la crea la acción la primera vez (`create-missing-columns: 'true'`), o créala tú.
-Las columnas se muestran en el orden en que se crearon (TaskView aún no permite reordenarlas).
+TaskView 1.56.0 crea por defecto `TODO`, `In Progress` y `Done` en cada proyecto.
+
+Las columnas se muestran **en el orden en que se crearon** y TaskView aún no permite
+reordenarlas. Si dejas que la acción cree `Review`, quedará después de `Done`. Para tener el
+orden correcto, al crear cada proyecto (antes de tener tareas en Done):
+
+1. Renombra `Done` → `Review`.
+2. Agrega una columna nueva `Done`.
+3. (Opcional) Agrega `Backlog` si la quieres; quedará al final.
+
+Resultado: `TODO → In Progress → Review → Done`.
 
 ## Código de tarea
 
@@ -90,6 +97,14 @@ Errores típicos (aparecen como *warning* sin romper el PR):
 
 ## Estado
 
-Probada contra un API simulado (rama, rama sin código, tag, draft, PR con columna faltante,
-merge, tarea inexistente, token inválido). La primera validación contra TaskView real se
-hace en producción con la primera rama `tv-<id>`.
+Probada de punta a punta (17-10-2026) en un repo público temporal de GitHub contra TaskView
+1.56.0 real, a través de un túnel de Cloudflare:
+
+| Evento en GitHub | Resultado en TaskView |
+|---|---|
+| Push de la rama `tv-5-probar-action` | Tarea 5 → In Progress |
+| PR "TV-5 Probar GitHub Action" | Columna Review creada, tarea 5 → Review |
+| Merge del PR | Tarea 5 → Done y completada |
+
+Además se probaron contra un API simulado: rama sin código, tag, PR en draft, tarea
+inexistente y token inválido.

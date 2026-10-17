@@ -5,8 +5,8 @@
 # Requisitos en el repo (Settings -> Secrets and variables -> Actions):
 #   Secret   TASKVIEW_TOKEN    token tvk_... de TaskView
 #
-# Proceso por defecto (TaskView columns):
-#   Backlog -> TODO          manual (planificacion / sprint)
+# Proceso (columnas del Kanban, ver docs/github-kanban.md):
+#   TODO                     manual (planificacion / sprint)
 #   TODO -> In Progress      al crear la rama   tv-123-descripcion
 #   In Progress -> Review    al abrir el PR
 #   Review -> Done           al mergear el PR (y la tarea queda completada)
