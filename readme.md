@@ -11,6 +11,8 @@ Misma estructura que el repo de `n8n`:
 | `centrifugo/config.json` | Notificaciones en tiempo real (secretos van por `.env`) |
 | `scripts/init-db.sh` | Crea rol y base de datos en `local_postgres` |
 | `scripts/backup.sh` / `restore.sh` | Backup de BD + adjuntos (VPS) |
+| `scripts/deploy.sh` | Despliegue completo en el VPS (clona, genera secretos, levanta) |
+| `scripts/generate-secrets.sh` | Genera los secretos que siguen en `change-me` |
 | `scripts/telegram-webhook.sh` | Registra el webhook del bot de Telegram |
 | `secrets/` | Apple `AuthKey.p8` y Firebase JSON (no se sube a git) |
 | [`docs/integraciones.md`](docs/integraciones.md) | Paso a paso de GitHub, GitLab, Gitea, Telegram, Slack, Google, Apple y Firebase |
@@ -78,26 +80,39 @@ Cloudflare Zero Trust -> Networks -> Tunnels -> **Create a tunnel** `taskview`
 | tasks-mcp.slasdevelopments.com | `taskview-mcp:3100` |
 | tasks-ws.slasdevelopments.com | `centrifugo:8000` |
 
-### 2. Servidor
+### 2. Servidor (un solo comando)
+
+Desde la carpeta donde quieres el proyecto:
 
 ```bash
-git clone https://github.com/johannhsdev/taskview.git
-cd taskview
-cp .env.example .env
-bash scripts/generate-secrets.sh
-nano .env          # CLOUDFLARE_TUNNEL_TOKEN, SMTP_* y credenciales de integraciones
-docker compose pull
-docker compose up -d
-docker compose ps
+curl -fsSL https://raw.githubusercontent.com/johannhsdev/taskview/main/scripts/deploy.sh | bash
 ```
 
-`migration` debe quedar `Exited (0)` y el resto `Up`. Logs: `docker compose logs -f taskview-api-server`.
+`scripts/deploy.sh`:
+
+1. Clona el repo en `./taskview` (o hace `git pull` si ya existe).
+2. Crea `.env` desde `.env.example` y genera todos los secretos
+   (BD, JWT, cifrado, Centrifugo, webhook de Telegram). Nunca pisa uno existente.
+3. Pide solo lo manual: **token de Cloudflare Tunnel** y **SMTP** (host vacío = sin correo).
+4. Ajusta `PASSWORD_CHANGE_CONFIRMATION`: `email` con SMTP, `password` sin SMTP.
+5. `pull` + `up -d`, espera la migración y el API y prueba la URL pública.
+6. Registra el webhook de Telegram si hay bot configurado.
+7. Muestra qué integraciones están `on`/`off`.
+
+Para activar integraciones o actualizar después:
+
+```bash
+cd taskview && nano .env && bash scripts/deploy.sh
+```
+
+Las credenciales de GitHub, GitLab, Gitea, Slack, Telegram, Google y Apple **no se
+pueden generar**: las entrega cada servicio al crear la app o el bot (ver
+[docs/integraciones.md](docs/integraciones.md)).
 
 ### 3. Despues del primer arranque
 
 1. Abrir https://tasks.slasdevelopments.com y reclamar la cuenta por defecto (ver abajo).
-2. Si se configuro Telegram: `bash scripts/telegram-webhook.sh`.
-3. Backup diario (cron):
+2. Backup diario (cron):
 
 ```bash
 0 3 * * * cd /ruta/taskview && bash scripts/backup.sh >> backups/backup.log 2>&1

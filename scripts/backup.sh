@@ -9,9 +9,12 @@ mkdir -p "$BACKUP_DIR"
 
 cd "$ROOT_DIR"
 
-set -a
-source .env
-set +a
+ENV_FILE="$ROOT_DIR/.env"
+
+source "$ROOT_DIR/scripts/_env.sh"
+
+DB_USER="$(env_get DB_USER)"
+DB_NAME="$(env_get DB_NAME)"
 
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 FILE="$BACKUP_DIR/taskview_${TIMESTAMP}.dump"

@@ -12,9 +12,13 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$ROOT_DIR"
 
-set -a
-source .env
-set +a
+ENV_FILE="$ROOT_DIR/.env"
+
+source "$ROOT_DIR/scripts/_env.sh"
+
+TELEGRAM_BOT_TOKEN="$(env_get TELEGRAM_BOT_TOKEN)"
+TELEGRAM_WEBHOOK_SECRET="$(env_get TELEGRAM_WEBHOOK_SECRET)"
+API_PUBLIC_URL="$(env_get API_PUBLIC_URL)"
 
 if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_WEBHOOK_SECRET" ]; then
     echo "TELEGRAM_BOT_TOKEN y TELEGRAM_WEBHOOK_SECRET deben estar en .env"
