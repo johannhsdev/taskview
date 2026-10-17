@@ -36,3 +36,13 @@ docker compose exec -T taskview-api-server \
 echo "Backups created:"
 echo "$FILE"
 echo "$FILES_ARCHIVE"
+
+# Retencion: borrar respaldos con mas de BACKUP_RETENTION_DAYS dias (por defecto 14).
+RETENTION_DAYS="$(env_get BACKUP_RETENTION_DAYS)"
+RETENTION_DAYS="${RETENTION_DAYS:-14}"
+
+find "$BACKUP_DIR" -maxdepth 1 -type f \
+    \( -name 'taskview_*.dump' -o -name 'taskview_files_*.tar.gz' \) \
+    -mtime +"$RETENTION_DAYS" -print -delete
+
+echo "Retention: $RETENTION_DAYS days."
