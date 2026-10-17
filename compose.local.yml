@@ -1,0 +1,151 @@
+services:
+
+  db-init:
+    image: postgres:17-alpine
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./scripts/init-db.sh:/init-db.sh:ro
+
+    entrypoint:
+      - /bin/sh
+      - /init-db.sh
+
+    networks:
+      - local-infra
+
+    profiles:
+      - tools
+
+
+  migration:
+    image: gimanhead/taskview-ce-db-migration:${TASKVIEW_VERSION}
+    container_name: local_taskview_migration
+    restart: "no"
+
+    env_file:
+      - .env
+
+    networks:
+      - local-infra
+
+
+  taskview-api-server:
+    image: gimanhead/taskview-ce-api-server:${TASKVIEW_VERSION}
+    container_name: local_taskview_api
+    restart: unless-stopped
+
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
+
+    env_file:
+      - .env
+
+    ports:
+      - "1725:1401"
+
+    volumes:
+      - ./logs:/usr/src/app/logs
+      - ./secrets:/usr/src/app/secrets:ro
+      - taskview_files:/usr/src/app/data/files
+
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+
+    networks:
+      - local-infra
+
+
+  taskview-webapp:
+    image: gimanhead/taskview-ce-webapp:${TASKVIEW_VERSION}
+    container_name: local_taskview_webapp
+    restart: unless-stopped
+
+    environment:
+      TASKVIEW_API_URL: ${TASKVIEW_API_URL}
+
+    ports:
+      - "8888:80"
+
+    networks:
+      - local-infra
+
+
+  taskview-mcp:
+    image: gimanhead/taskview-ce-mcp:${TASKVIEW_VERSION}
+    container_name: local_taskview_mcp
+    restart: unless-stopped
+
+    environment:
+      TASKVIEW_URL: http://taskview-api-server:1401
+
+    ports:
+      - "3100:3100"
+
+    depends_on:
+      - taskview-api-server
+
+    networks:
+      - local-infra
+
+
+  centrifugo:
+    image: centrifugo/centrifugo:${CENTRIFUGO_VERSION}
+    container_name: local_taskview_centrifugo
+    restart: unless-stopped
+
+    command: centrifugo -c /centrifugo/config.json
+
+    environment:
+      CENTRIFUGO_HTTP_API_KEY: ${CENTRIFUGO_API_KEY}
+      CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: ${CENTRIFUGO_TOKEN_SECRET}
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: ${APP_URL}
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./centrifugo/config.json:/centrifugo/config.json:ro
+
+    networks:
+      - local-infra
+
+
+  # HTTPS publico para Slack, Telegram y webhooks de repos.
+  # docker compose -f compose.local.yml --profile tunnel up -d
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: local_taskview_cloudflared
+    restart: unless-stopped
+
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+
+    environment:
+      TUNNEL_TOKEN: ${LOCAL_CLOUDFLARE_TUNNEL_TOKEN}
+
+    depends_on:
+      - taskview-webapp
+      - taskview-api-server
+
+    networks:
+      - local-infra
+
+    profiles:
+      - tunnel
+
+
+volumes:
+  taskview_files:
+
+
+networks:
+  local-infra:
+    external: true
+    name: local-infra-dev_default

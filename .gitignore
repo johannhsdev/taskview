@@ -1,0 +1,25 @@
+# Environment
+.env
+
+# Runtime data
+logs/
+
+# Backups
+backups/
+*.sql
+*.dump
+*.tar
+*.gz
+
+# Logs
+*.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Credenciales (Apple .p8, Firebase JSON)
+secrets/*
+!secrets/.gitkeep

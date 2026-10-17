@@ -1,0 +1,154 @@
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: taskview_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER} -d ${DB_NAME}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - backend
+
+
+  migration:
+    image: gimanhead/taskview-ce-db-migration:${TASKVIEW_VERSION}
+    container_name: taskview_migration
+    restart: "no"
+
+    env_file:
+      - .env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - backend
+
+
+  taskview-api-server:
+    image: gimanhead/taskview-ce-api-server:${TASKVIEW_VERSION}
+    container_name: taskview_api
+    restart: unless-stopped
+
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./logs:/usr/src/app/logs
+      - ./secrets:/usr/src/app/secrets:ro
+      - taskview_files:/usr/src/app/data/files
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+
+    networks:
+      - backend
+      - edge
+
+
+  taskview-webapp:
+    image: gimanhead/taskview-ce-webapp:${TASKVIEW_VERSION}
+    container_name: taskview_webapp
+    restart: unless-stopped
+
+    environment:
+      TASKVIEW_API_URL: ${TASKVIEW_API_URL}
+
+    networks:
+      - edge
+
+
+  taskview-mcp:
+    image: gimanhead/taskview-ce-mcp:${TASKVIEW_VERSION}
+    container_name: taskview_mcp
+    restart: unless-stopped
+
+    environment:
+      # Para OAuth (claude.ai / ChatGPT) debe ser la URL publica del API.
+      TASKVIEW_URL: ${TASKVIEW_API_URL}
+      MCP_PUBLIC_URL: ${MCP_PUBLIC_URL}
+
+    depends_on:
+      - taskview-api-server
+
+    networks:
+      - edge
+
+
+  centrifugo:
+    image: centrifugo/centrifugo:${CENTRIFUGO_VERSION}
+    container_name: taskview_centrifugo
+    restart: unless-stopped
+
+    command: centrifugo -c /centrifugo/config.json
+
+    environment:
+      CENTRIFUGO_HTTP_API_KEY: ${CENTRIFUGO_API_KEY}
+      CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: ${CENTRIFUGO_TOKEN_SECRET}
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: ${APP_URL}
+
+    volumes:
+      - ./centrifugo/config.json:/centrifugo/config.json:ro
+
+    networks:
+      - backend
+      - edge
+
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: taskview_cloudflared
+    restart: unless-stopped
+
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+
+    depends_on:
+      - taskview-webapp
+      - taskview-api-server
+
+    networks:
+      - edge
+
+
+volumes:
+  postgres_data:
+  taskview_files:
+
+
+networks:
+
+  backend:
+    internal: true
+
+  edge:
